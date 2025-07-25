@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "defaultProvider": "AzureRM",
+  "providers": [
+    {
+      "name": "AzureRM",
+      "properties": {
+        "backend": {
+          "type": "azurerm"
+        }
+      }
+    }
+  ],
+  "variables": {},
+  "resources": [
+    {
+      "name": "mailbox-agent-app",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-02-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'mailbox-agent-plan')]",
+        "siteConfig": {
+          "linuxFxVersion": "PYTHON|3.11",
+          "appCommandLine": "gunicorn --bind=0.0.0.0 --timeout 600 web_agent:app",
+          "appSettings": [
+            {
+              "name": "PROJECT_ENDPOINT",
+              "value": "[parameters('projectEndpoint')]"
+            },
+            {
+              "name": "MODEL_DEPLOYMENT_NAME", 
+              "value": "[parameters('modelDeploymentName')]"
+            },
+            {
+              "name": "FLASK_SECRET_KEY",
+              "value": "[parameters('flaskSecretKey')]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
