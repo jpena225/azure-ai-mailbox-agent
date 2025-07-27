@@ -6,6 +6,7 @@ from azure.identity import DefaultAzureCredential
 from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import FunctionTool
 import uuid
+import requests
 
 ## Load environment variables
 load_dotenv()
@@ -17,8 +18,25 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
 
 # Your function
-def get_mailbox():
-    return "Mailbox data retrieved successfully."
+def get_mailbox(name: str):
+    """
+    Gets Information about a users mailbox
+
+    :param name: the email address of the user
+    :return: Mailbox information for the email address    
+    """
+    print("Inside get_Mailbox")
+
+    base_url = "https://mbxcall-hgd7exg4dhhwembd.westus-01.azurewebsites.net/api/mbxtrigger?"
+    complete_url = f"{base_url}name={name}&code={os.environ['AZURE_FUNCTION_KEY']}"
+    response = requests.get(complete_url, timeout=10)
+    
+    return {
+        "status_code": response.status_code,
+        "content": response.text, 
+        "headers": dict(response.headers),
+        "url": response.url
+    }
 
 # Define user functions for the agent
 user_functions = [get_mailbox]
@@ -36,12 +54,15 @@ try:
     
     # Initialize the FunctionTool with user-defined functions
     functions = FunctionTool(functions=user_functions)
+    project_client.enable_auto_function_calls([get_mailbox])
     
     # Create agent (you might want to do this per session or reuse)
     agent = project_client.create_agent(
         model=os.environ["MODEL_DEPLOYMENT_NAME"],
-        name="web-agent",
-        instructions="You are a helpful agent accessible through a web interface",
+        name="my-agent",
+        instructions="""You are a technical support agent. 
+                    When a user asks you for infomration about there mailbox get there email address and use that value to call the function available to you.
+                """,
         tools=functions.definitions,
     )
     
