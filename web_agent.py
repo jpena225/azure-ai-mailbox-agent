@@ -7,7 +7,7 @@ from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import FunctionTool
 import uuid
 
-# Load environment variables
+## Load environment variables
 load_dotenv()
 
 # Initialize Flask app
