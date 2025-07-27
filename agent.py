@@ -4,15 +4,34 @@ from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
 from azure.ai.agents.models import FunctionTool
 from azure.ai.agents import AgentsClient
+import requests
+
 
 
 #create my function
-def get_mailbox():
-    return "Mailbox data retrieved successfully."
+def get_mailbox(name: str):
+    """
+    Gets Information about a users mailbox
+
+    :param name: the email address of the user
+    :return: Mailbox information for the email address    
+    """
+    print("Inside get_Mailbox")
+
+    base_url = "https://mbxcall-hgd7exg4dhhwembd.westus-01.azurewebsites.net/api/mbxtrigger?"
+    complete_url = f"{base_url}name={name}&code={os.environ['AZURE_FUNCTION_KEY']}"
+    response = requests.get(complete_url, timeout=10)
+    
+    return {
+        "status_code": response.status_code,
+        "content": response.text, 
+        "headers": dict(response.headers),
+        "url": response.url
+    }
 
 
 # Define user functions for the agent
-user_functions = [get_mailbox]
+user_functions = [get_mailbox]   
 
 load_dotenv()
 
@@ -31,12 +50,16 @@ project_client = AgentsClient(
 # Initialize the FunctionTool with user-defined functions
 functions = FunctionTool(functions=user_functions)
 
+project_client.enable_auto_function_calls([get_mailbox])
+
 with project_client:
     # Create an agent with custom functions
     agent = project_client.create_agent(
         model=os.environ["MODEL_DEPLOYMENT_NAME"],
         name="my-agent",
-        instructions="You are a helpful agent",
+        instructions="""You are a technical support agent. 
+                    When a user asks you for infomration about there mailbox get there email address and use that value to call the function available to you.
+                """,
         tools=functions.definitions,
     )
     print(f"Created agent, ID: {agent.id}")
