@@ -177,9 +177,9 @@
         </div>
         
         <div class="chat-input-container">
-            <input type="text" class="chat-input" id="messageInput" placeholder="Type your message here..." />
-            <button class="send-button" id="sendButton">Send</button>
-            <button class="clear-button" id="clearButton">Clear</button>
+            <input type="text" class="chat-input" id="messageInput" placeholder="Type your message here..." aria-label="Chat input field" />
+            <button class="send-button" id="sendButton" aria-label="Send message">Send</button>
+            <button class="clear-button" id="clearButton" aria-label="Clear chat history">Clear</button>
         </div>
     </div>
 
@@ -191,14 +191,23 @@
         const loading = document.getElementById('loading');
         const typingIndicator = document.getElementById('typingIndicator');
 
-        function addMessage(content, isUser = false, isError = false) {
+        function addMessage(content, isUser = false, isError = false, imageBase64 = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : (isError ? 'error-message' : 'agent-message')}`;
             messageDiv.textContent = content;
             chatMessages.appendChild(messageDiv);
+
+            if (imageBase64) {
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${imageBase64}`;
+                img.alt = "Generated Chart";
+                img.style.maxWidth = "100%";
+                img.style.marginTop = "10px";
+                chatMessages.appendChild(img);
+            }
+
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-
         function showTyping() {
             typingIndicator.style.display = 'block';
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -230,12 +239,12 @@
                 });
 
                 const data = await response.json();
-                
+
                 if (response.ok) {
-                    addMessage(data.agent_response);
+                    addMessage(data.agent_response, false, false, data.image_base64 || null);
                 } else {
                     addMessage(`Error: ${data.error}`, false, true);
-                }
+                }                
             } catch (error) {
                 addMessage(`Network error: ${error.message}`, false, true);
             } finally {
